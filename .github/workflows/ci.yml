@@ -1,0 +1,33 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11", cache: pip}
+      - run: pip install -r requirements.txt
+      - name: Unit and pipeline tests (synthetic data, local MLflow backend)
+        run: pytest -q
+      - name: Train on the real dataset and enforce the quality gate
+        env:
+          MLFLOW_TRACKING_URI: sqlite:///mlflow.db
+          PYTHONPATH: src
+        run: |
+          python -m credit_risk.data
+          python -m credit_risk.train | tee train.log
+          grep -q "'registered': True" train.log
+      - uses: actions/upload-artifact@v4
+        with: {name: training-log, path: train.log}
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t credit-risk-api:${{ github.sha }} .

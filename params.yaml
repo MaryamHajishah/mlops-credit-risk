@@ -1,0 +1,20 @@
+# Training and promotion settings. Change these, rerun `make train`, and compare runs in the MLflow UI.
+data:
+  path: data/credit.csv
+  target: class
+  positive_label: bad
+  test_size: 0.2
+  random_state: 42
+model:
+  type: logistic_regression   # gradient_boosting | logistic_regression
+  gradient_boosting:
+    n_estimators: 200
+    learning_rate: 0.05
+    max_depth: 3
+  logistic_regression:
+    C: 1.0
+    max_iter: 1000
+promotion:
+  registered_model: credit-risk
+  min_roc_auc: 0.70          # quality gate: never register a model below this
+  alias: champion
